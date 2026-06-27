@@ -13,6 +13,14 @@ export type PaymentMethod = {
   is_default: boolean
 }
 
+export type RecurringTemplate = {
+  id: string
+  name: string
+  items: Item[]
+  contacts: string[]   // frequent participant names
+  created_at: string
+}
+
 export type UserProfile = {
   id: string
   email: string
@@ -21,6 +29,7 @@ export type UserProfile = {
   payment_methods: PaymentMethod[]
   currency: string
   push_token?: string
+  recurring_templates?: RecurringTemplate[]
   created_at: string
 }
 
@@ -75,4 +84,7 @@ export type Selection = {
   ALTER TABLE sessions ADD COLUMN IF NOT EXISTS table_number TEXT;
   ALTER TABLE sessions ADD COLUMN IF NOT EXISTS restaurant_name TEXT;
   ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+
+  -- Recurring templates:
+  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS recurring_templates JSONB DEFAULT '[]';
 */

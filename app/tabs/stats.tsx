@@ -82,14 +82,22 @@ export default function StatsScreen() {
           end={{ x: 1, y: 1 }}
           style={s.heroCard}
         >
-          <Text style={s.heroLabel}>TOTAL HOSTED</Text>
+          <Text style={s.heroLabel}>LIFETIME TOTAL SPLIT</Text>
           <Text style={s.heroAmount}>{fmtCurrency(totalHosted, currency)}</Text>
-          <View style={s.heroRow}>
-            <View style={s.heroPill}>
-              <Text style={s.heroPillText}>{sessions.length} sessions</Text>
+          <View style={s.heroStatsRow}>
+            <View style={s.heroStat}>
+              <Text style={s.heroStatNum}>{sessions.length}</Text>
+              <Text style={s.heroStatLabel}>sessions</Text>
             </View>
-            <View style={s.heroPill}>
-              <Text style={s.heroPillText}>{confirmedSels.length} guests paid</Text>
+            <View style={s.heroStatDivider} />
+            <View style={s.heroStat}>
+              <Text style={s.heroStatNum}>{fmtCurrency(avgSession, currency)}</Text>
+              <Text style={s.heroStatLabel}>avg bill</Text>
+            </View>
+            <View style={s.heroStatDivider} />
+            <View style={s.heroStat}>
+              <Text style={s.heroStatNum}>{confirmedSels.length}</Text>
+              <Text style={s.heroStatLabel}>paid</Text>
             </View>
           </View>
         </LinearGradient>
@@ -205,14 +213,14 @@ const s = StyleSheet.create({
   },
   heroLabel: { ...font.xs, color: 'rgba(255,255,255,0.6)', fontWeight: '700', letterSpacing: 1.2, marginBottom: 6 },
   heroAmount: { fontSize: 42, fontWeight: '800', color: '#fff', marginBottom: 16 },
-  heroRow: { flexDirection: 'row', gap: 8 },
-  heroPill: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  heroStatsRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: radius.md, padding: 12, gap: 0,
   },
-  heroPillText: { color: '#fff', ...font.xs, fontWeight: '600' },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatNum: { color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 2 },
+  heroStatLabel: { color: 'rgba(255,255,255,0.6)', ...font.xs },
+  heroStatDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
 

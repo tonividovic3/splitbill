@@ -27,7 +27,7 @@ const DEMO_ITEMS: Item[] = [
 
 export default function HomeScreen() {
   const router = useRouter()
-  const { user, profile } = useAuthStore()
+  const { user, profile, pendingTemplate, setPendingTemplate, saveRecurringTemplate } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('home')
   const [preview, setPreview] = useState<string | null>(null)
   const [previewBase64, setPreviewBase64] = useState<string | null>(null)
@@ -39,6 +39,8 @@ export default function HomeScreen() {
   const [saving, setSaving] = useState(false)
   const [splitMode, setSplitMode] = useState<'per_item' | 'equal'>('per_item')
   const [tripPeople, setTripPeople] = useState(2)
+  const [templateName, setTemplateName] = useState('')
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scanPulse = useRef(new Animated.Value(1)).current
   const currency = profile?.currency || 'EUR'
@@ -46,6 +48,16 @@ export default function HomeScreen() {
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start()
   }, [])
+
+  useEffect(() => {
+    if (pendingTemplate) {
+      setItems(pendingTemplate.items)
+      setSessionName(pendingTemplate.name)
+      setSplitMode('per_item')
+      setScreen('items')
+      setPendingTemplate(null)
+    }
+  }, [pendingTemplate])
 
   useEffect(() => {
     if (screen !== 'scanning') return
@@ -179,7 +191,7 @@ export default function HomeScreen() {
               onPress={() => setSplitMode(m)}
             >
               <Text style={[s.modeBtnText, splitMode === m && s.modeBtnTextActive]}>
-                {m === 'per_item' ? '📋 Per item' : '✈️ Trip mode'}
+                {m === 'per_item' ? '📋 Per item' : '⚖️ Equal split'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -255,12 +267,50 @@ export default function HomeScreen() {
         {/* Session name */}
         <Text style={s.inputLabel}>SESSION NAME</Text>
         <TextInput
-          style={[s.input, { marginBottom: 20 }]}
+          style={[s.input, { marginBottom: 8 }]}
           placeholder="e.g. Dinner at Mario's, June 26"
           placeholderTextColor={C.textMuted}
           value={sessionName}
           onChangeText={setSessionName}
         />
+
+        {/* Save as recurring template */}
+        {!showSaveTemplate ? (
+          <TouchableOpacity onPress={() => { setTemplateName(sessionName); setShowSaveTemplate(true) }} style={{ marginBottom: 16 }}>
+            <Text style={{ ...font.xs, color: C.accent, fontWeight: '600' }}>💾 Save as recurring template</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[s.card, { marginBottom: 16, padding: 12, gap: 8 }]}>
+            <Text style={[font.xs, { color: C.textMuted, fontWeight: '700', letterSpacing: 0.8 }]}>TEMPLATE NAME</Text>
+            <TextInput
+              style={s.input}
+              placeholder="e.g. Monthly Rent, Netflix Split"
+              placeholderTextColor={C.textMuted}
+              value={templateName}
+              onChangeText={setTemplateName}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={[s.addIconBtn, { flex: 1, borderRadius: radius.sm, height: 40 }]}
+                onPress={() => setShowSaveTemplate(false)}
+              >
+                <Text style={[font.xs, { color: C.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.addIconBtn, { flex: 2, borderRadius: radius.sm, height: 40, backgroundColor: C.accentSoft }]}
+                onPress={async () => {
+                  if (!templateName.trim()) return
+                  await saveRecurringTemplate(templateName.trim(), items, [])
+                  setShowSaveTemplate(false)
+                  Alert.alert('Saved!', `"${templateName.trim()}" saved as a recurring template.`)
+                }}
+              >
+                <Text style={[font.xs, { color: C.accent, fontWeight: '700' }]}>Save template</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity
           disabled={!sessionName.trim() || saving}

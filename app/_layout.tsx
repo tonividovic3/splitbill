@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { Stack, useRouter, useSegments } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../lib/store'
 import * as Notifications from 'expo-notifications'
+import { ONBOARDING_KEY } from './onboarding'
 import '../lib/i18n'
 
 Notifications.setNotificationHandler({
@@ -37,13 +39,17 @@ export default function RootLayout() {
     const isPublicRoute = segments[0] === 'guest' || segments[0] === 'table'
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (isPublicRoute) return
+      const onboardingDone = await AsyncStorage.getItem(ONBOARDING_KEY)
+      if (!onboardingDone) { router.replace('/onboarding'); return }
+
       if (session?.user) {
         setUser(session.user)
         await fetchProfile(session.user.id)
         registerPushToken(savePushToken)
-        if (!isPublicRoute) router.replace('/tabs/home')
+        router.replace('/tabs/home')
       } else {
-        if (!isPublicRoute) router.replace('/auth/login')
+        router.replace('/auth/login')
       }
     })
 
@@ -83,6 +89,7 @@ export default function RootLayout() {
       <Stack.Screen name="session/[code]" />
       <Stack.Screen name="guest/[code]" />
       <Stack.Screen name="table" />
+      <Stack.Screen name="onboarding" />
     </Stack>
   )
 }

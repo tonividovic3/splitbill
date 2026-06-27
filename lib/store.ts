@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import { supabase, UserProfile } from './supabase'
+import { supabase, UserProfile, RecurringTemplate, Item } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
 type AuthStore = {
   user: User | null
   profile: UserProfile | null
   loading: boolean
+  pendingTemplate: RecurringTemplate | null
   setUser: (user: User | null) => void
   fetchProfile: (userId: string) => Promise<void>
   signOut: () => Promise<void>
@@ -14,12 +15,16 @@ type AuthStore = {
   addPaymentMethod: (method: Omit<import('./supabase').PaymentMethod, 'id'>) => Promise<void>
   removePaymentMethod: (id: string) => Promise<void>
   setDefaultPayment: (id: string) => Promise<void>
+  setPendingTemplate: (t: RecurringTemplate | null) => void
+  saveRecurringTemplate: (name: string, items: Item[], contacts: string[]) => Promise<void>
+  deleteRecurringTemplate: (id: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   profile: null,
   loading: true,
+  pendingTemplate: null,
 
   setUser: (user) => set({ user }),
 
@@ -49,7 +54,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   savePushToken: async (token: string) => {
     const { user, profile } = get()
     if (!user) return
-    // Silently fails if push_token column doesn't exist yet
     await supabase.from('profiles').upsert({ id: user.id, push_token: token })
     if (profile) set({ profile: { ...profile, push_token: token } })
   },
@@ -77,5 +81,30 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const methods = profile.payment_methods.map(m => ({ ...m, is_default: m.id === id }))
     await supabase.from('profiles').upsert({ id: user.id, payment_methods: methods })
     set({ profile: { ...profile, payment_methods: methods } })
-  }
+  },
+
+  setPendingTemplate: (t) => set({ pendingTemplate: t }),
+
+  saveRecurringTemplate: async (name, items, contacts) => {
+    const { user, profile } = get()
+    if (!user || !profile) return
+    const newTemplate: RecurringTemplate = {
+      id: Date.now().toString(),
+      name,
+      items,
+      contacts,
+      created_at: new Date().toISOString(),
+    }
+    const templates = [...(profile.recurring_templates || []), newTemplate]
+    await supabase.from('profiles').upsert({ id: user.id, recurring_templates: templates })
+    set({ profile: { ...profile, recurring_templates: templates } })
+  },
+
+  deleteRecurringTemplate: async (id) => {
+    const { user, profile } = get()
+    if (!user || !profile) return
+    const templates = (profile.recurring_templates || []).filter(t => t.id !== id)
+    await supabase.from('profiles').upsert({ id: user.id, recurring_templates: templates })
+    set({ profile: { ...profile, recurring_templates: templates } })
+  },
 }))
